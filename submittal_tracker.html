@@ -1,0 +1,2292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Construction Submittal Management Tool</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .file-upload {
+            border: 3px dashed #ddd;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-upload:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .file-upload.dragover {
+            border-color: #667eea;
+            background: #f0f4ff;
+            transform: scale(1.02);
+        }
+
+        .file-input {
+            margin: 20px 0;
+        }
+
+        .file-input input {
+            display: none;
+        }
+
+        .file-input label {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+            font-weight: 500;
+        }
+
+        .file-input label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .dashboard {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-card * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .stat-card.primary {
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+        }
+
+        .stat-card.success {
+            background: linear-gradient(135deg, #5a67d8 0%, #4c51bf 100%);
+        }
+
+        .stat-card.warning {
+            background: linear-gradient(135deg, #718096 0%, #4a5568 100%);
+        }
+
+        .stat-card.info {
+            background: linear-gradient(135deg, #63b3ed 0%, #4299e1 100%);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .section h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .contractor-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .contractor-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .contractor-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        .contractor-name {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .contractor-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .table-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            overflow-x: auto;
+        }
+
+        .submittal-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .submittal-table th {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 15px 10px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .submittal-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #eee;
+            vertical-align: top;
+        }
+
+        .submittal-table tr:hover {
+            background: #f8f9ff;
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-align: center;
+            display: inline-block;
+            min-width: 100px;
+        }
+
+        .status-reviewed { background: #d4edda; color: #155724; }
+        .status-open { background: #fff3cd; color: #856404; }
+        .status-rejected { background: #f8d7da; color: #721c24; }
+        .status-approved { background: #d1ecf1; color: #0c5460; }
+        .status-new { background: #e2e3e5; color: #383d41; }
+
+        .priority-input {
+            width: 60px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .lead-time-input {
+            width: 80px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 150px;
+            flex: 0 0 auto;
+        }
+
+        .filter-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: white;
+        }
+
+        .search-input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: white;
+            min-width: 150px;
+            width: 150px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        }
+
+.multi-select-container {
+    position: relative;
+    display: inline-block;
+    min-width: 150px;
+    width: 150px;
+}
+
+.multi-select-button {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background: white;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 36px;
+}
+
+.multi-select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+}
+
+.multi-select-option {
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.multi-select-option:hover {
+    background: #f8f9fa;
+}
+
+.multi-select-option input[type="checkbox"] {
+    margin: 0;
+}
+
+.export-btn {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    margin-top: auto;
+    width: auto;
+    min-width: 120px;
+}
+
+        .project-selector {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #e9ecef;
+        }
+
+        .project-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .project-input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: white;
+            min-width: 200px;
+        }
+
+        .project-select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: white;
+            min-width: 200px;
+        }
+
+        .project-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .project-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .project-btn.danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+
+        .project-btn.danger:hover {
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+        }
+
+        .current-project {
+            font-weight: bold;
+            color: #2c3e50;
+            background: #e8f4fd;
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 2px solid #667eea;
+        }
+
+        .hide-checkbox {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .hidden-row {
+            opacity: 0.5;
+            background-color: #f8f9fa;
+        }
+
+        .toggle-hidden {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            background: #e9ecef;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .toggle-hidden input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .sortable-header {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            padding-right: 20px;
+        }
+
+        .sortable-header:hover {
+            background: rgba(102, 126, 234, 0.2);
+        }
+
+        .sort-arrow {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            opacity: 0.5;
+        }
+
+        .sort-arrow.active {
+            opacity: 1;
+        }
+
+        .export-options {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .export-modal {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .export-modal h3 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .export-option {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .export-option:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .export-option input[type="radio"] {
+            margin-right: 10px;
+        }
+
+        .export-option-details {
+            margin-top: 10px;
+            padding-left: 25px;
+            display: none;
+        }
+
+        .export-option.selected .export-option-details {
+            display: block;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 25px;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .modal-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .modal-btn.secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .type-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .type-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+
+        .type-card h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .type-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+.clear-filters-btn {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-top: auto;
+            font-size: 0.9rem;
+        }
+
+        .clear-filters-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+            
+            .filters {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏗️ Construction Submittal Management Tool</h1>
+            <p>Track, analyze, and prioritize your construction submittals with ease</p>
+        </div>
+
+        <div class="main-content">
+            <div class="project-selector">
+                <h3>📋 Project Management</h3>
+                <div class="project-controls">
+                    <div id="currentProjectDisplay" class="current-project">
+                        Current: ${currentProject || 'No Project Selected'}
+                    </div>
+                    <select id="projectSelect" class="project-select">
+                        <option value="">Switch to project...</option>
+                    </select>
+                    <button class="project-btn" onclick="createNewProject()">New Project</button>
+                    <button class="project-btn danger" onclick="deleteCurrentProject()" style="display: ${currentProject ? 'inline-block' : 'none'}" id="deleteProjectBtn">Delete Current Project</button>
+                </div>
+            </div>
+
+            <div class="file-upload" id="fileUpload">
+                <h3>📊 Upload Your Submittal Spreadsheet</h3>
+                <p id="uploadText">${currentProject ? `Upload spreadsheet for project: <strong>${currentProject}</strong>` : 'Create or select a project to begin'}</p>
+                <div class="file-input">
+                    <input type="file" id="fileInput" accept=".xlsx,.xls" ${!currentProject ? 'disabled' : ''}>
+                    <label for="fileInput" style="${!currentProject ? 'opacity: 0.5; cursor: not-allowed;' : ''}">Choose File</label>
+                </div>
+                <p style="margin-top: 10px; color: #666; font-size: 0.9rem;">
+                    Supports Excel files (.xlsx, .xls) • Your data stays private and local
+                </p>
+            </div>
+
+            <div id="dashboard" class="dashboard">
+                <!-- Dashboard content will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+    <script>
+        let submittalData = [];
+        let currentProject = localStorage.getItem('currentProject') || '';
+        let savedPriorities = {};
+        let savedLeadTimes = {};
+        let hiddenSubmittals = {};
+        let includeHidden = false;
+        let currentSort = { column: null, direction: 'asc' };
+        let nameSearchText = '';
+        let submittalNoSearchText = '';
+        let savedFilters = { contractor: '', status: '' };
+        let selectedStatuses = new Set();
+                
+        // Performance optimization variables
+        let isUpdating = false;
+        let updateTimeout = null;
+        let filteredCache = null;
+        let cacheKey = null;
+
+        // Load project-specific data if we have a current project
+        function loadProjectData() {
+            if (currentProject) {
+                savedPriorities = JSON.parse(localStorage.getItem(`${currentProject}_submittalPriorities`) || '{}');
+                savedLeadTimes = JSON.parse(localStorage.getItem(`${currentProject}_submittalLeadTimes`) || '{}');
+                hiddenSubmittals = JSON.parse(localStorage.getItem(`${currentProject}_hiddenSubmittals`) || '{}');
+                includeHidden = JSON.parse(localStorage.getItem(`${currentProject}_includeHidden`) || 'false');
+                currentSort = JSON.parse(localStorage.getItem(`${currentProject}_currentSort`) || '{"column": null, "direction": "asc"}');
+                nameSearchText = localStorage.getItem(`${currentProject}_nameSearchText`) || '';
+                savedFilters = JSON.parse(localStorage.getItem(`${currentProject}_savedFilters`) || '{"contractor": "", "status": ""}');
+                const savedSelectedStatuses = JSON.parse(localStorage.getItem(`${currentProject}_selectedStatuses`) || '[]');
+                selectedStatuses = new Set(savedSelectedStatuses);
+                submittalNoSearchText = localStorage.getItem(`${currentProject}_submittalNoSearchText`) || '';
+            }
+        }
+
+        // Save project-specific data
+        function saveProjectData() {
+            if (currentProject) {
+                localStorage.setItem(`${currentProject}_submittalPriorities`, JSON.stringify(savedPriorities));
+                localStorage.setItem(`${currentProject}_submittalLeadTimes`, JSON.stringify(savedLeadTimes));
+                localStorage.setItem(`${currentProject}_hiddenSubmittals`, JSON.stringify(hiddenSubmittals));
+                localStorage.setItem(`${currentProject}_includeHidden`, JSON.stringify(includeHidden));
+                localStorage.setItem(`${currentProject}_currentSort`, JSON.stringify(currentSort));
+                localStorage.setItem(`${currentProject}_nameSearchText`, nameSearchText);
+                localStorage.setItem(`${currentProject}_submittalNoSearchText`, submittalNoSearchText);
+                localStorage.setItem(`${currentProject}_savedFilters`, JSON.stringify(savedFilters));
+                localStorage.setItem('currentProject', currentProject);
+                localStorage.setItem(`${currentProject}_selectedStatuses`, JSON.stringify([...selectedStatuses]));
+            }
+        }
+
+        // Get list of all projects
+        function getAllProjects() {
+            const projects = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.endsWith('_submittalPriorities')) {
+                    const projectName = key.replace('_submittalPriorities', '');
+                    projects.push(projectName);
+                }
+            }
+            return projects.sort();
+        }
+
+        // Initialize project data
+        loadProjectData();
+
+        // File upload handling
+        const fileUpload = document.getElementById('fileUpload');
+        const fileInput = document.getElementById('fileInput');
+        const dashboard = document.getElementById('dashboard');
+
+        // Initialize project selector
+        updateProjectSelector();
+        
+        // If we have a current project and data, show the dashboard
+        if (currentProject && localStorage.getItem(`${currentProject}_submittalPriorities`)) {
+            // Try to restore submittal data if it exists (this would need to be saved separately)
+            const savedSubmittalData = localStorage.getItem(`${currentProject}_submittalData`);
+            if (savedSubmittalData) {
+                try {
+                    submittalData = JSON.parse(savedSubmittalData);
+                    if (submittalData.length > 0) {
+                        showDashboard();
+                    }
+                } catch (e) {
+                    console.log('No saved submittal data found');
+                }
+            }
+        }
+
+        fileUpload.addEventListener('click', () => {
+            if (currentProject) fileInput.click();
+        });
+        fileUpload.addEventListener('dragover', handleDragOver);
+        fileUpload.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function updateProjectSelector() {
+            const projectSelect = document.getElementById('projectSelect');
+            const projects = getAllProjects();
+            
+            projectSelect.innerHTML = '<option value="">Switch to project...</option>';
+            projects.forEach(project => {
+                if (project !== currentProject) { // Don't show current project in dropdown
+                    const option = document.createElement('option');
+                    option.value = project;
+                    option.textContent = project;
+                    projectSelect.appendChild(option);
+                }
+            });
+            
+            // Add event listener for project switching
+            projectSelect.onchange = function() {
+                if (this.value) {
+                    switchToProject(this.value);
+                    this.value = ''; // Reset dropdown
+                }
+            };
+        }
+
+        function switchToProject(projectName) {
+            // Save current project data before switching
+            if (currentProject && submittalData.length > 0) {
+                saveProjectData();
+                // Also save the actual submittal data
+                localStorage.setItem(`${currentProject}_submittalData`, JSON.stringify(submittalData));
+            }
+            
+            // Switch to new project
+            currentProject = projectName;
+            localStorage.setItem('currentProject', currentProject);
+            
+            // Load new project data
+            loadProjectData();
+            
+            // Clear the dashboard first to prevent showing wrong data
+            dashboard.style.display = 'none';
+            fileUpload.style.display = 'block';
+
+            // Try to load submittal data for this project
+            const savedSubmittalData = localStorage.getItem(`${currentProject}_submittalData`);
+            if (savedSubmittalData) {
+                try {
+                    submittalData = JSON.parse(savedSubmittalData);
+                    if (submittalData.length > 0) {
+                        showDashboard();
+                    } else {
+                        // No data for this project - show upload screen
+                        dashboard.style.display = 'none';
+                        fileUpload.style.display = 'block';
+                    }
+                } catch (e) {
+                    submittalData = [];
+                    dashboard.style.display = 'none';
+                    fileUpload.style.display = 'block';
+                }
+            } else {
+                submittalData = [];
+                dashboard.style.display = 'none';
+                fileUpload.style.display = 'block';
+            }
+
+            // Clear the filter cache when switching projects to force table refresh
+            filteredCache = null;
+            cacheKey = null;
+            
+            // Update UI
+            updateProjectDisplay();
+            updateProjectSelector();
+            
+            // Enable file upload
+            fileInput.disabled = false;
+            document.querySelector('.file-input label').style.opacity = '1';
+            document.querySelector('.file-input label').style.cursor = 'pointer';
+
+// Force complete refresh of the dashboard and table when switching projects
+if (submittalData.length > 0) {
+    // Clear all caches to force fresh data
+    filteredCache = null;
+    cacheKey = null;
+    isUpdating = false;
+    
+    // Force a complete dashboard refresh
+    setTimeout(() => {
+        refreshDashboard();
+    }, 50);
+}
+
+        }
+
+        function createNewProject() {
+            const projectName = prompt('Enter new project name:');
+            if (!projectName || !projectName.trim()) return;
+            
+            const trimmedName = projectName.trim();
+            
+            // Check if project already exists
+            const existingProjects = getAllProjects();
+            if (existingProjects.includes(trimmedName)) {
+                alert('A project with this name already exists. Please choose a different name.');
+                return;
+            }
+            
+            // Save current project data if we have any
+            if (currentProject && submittalData.length > 0) {
+                saveProjectData();
+                localStorage.setItem(`${currentProject}_submittalData`, JSON.stringify(submittalData));
+            }
+            
+            // Create new project
+            currentProject = trimmedName;
+            localStorage.setItem('currentProject', currentProject);
+            
+            // Initialize empty data for new project
+            savedPriorities = {};
+            savedLeadTimes = {};
+            hiddenSubmittals = {};
+            includeHidden = false;
+            currentSort = { column: null, direction: 'asc' };
+            nameSearchText = '';
+            submittalNoSearchText = '';
+            savedFilters = { contractor: '', status: '' };
+            submittalData = [];
+            selectedStatuses = new Set();
+                        
+            // Update UI
+            updateProjectDisplay();
+            updateProjectSelector();
+            dashboard.style.display = 'none';
+            fileUpload.style.display = 'block';
+            
+            // Enable file upload
+            fileInput.disabled = false;
+            document.querySelector('.file-input label').style.opacity = '1';
+            document.querySelector('.file-input label').style.cursor = 'pointer';
+            
+            alert(`Created new project: ${currentProject}`);
+        }
+
+        function updateProjectDisplay() {
+            const currentProjectDisplay = document.getElementById('currentProjectDisplay');
+            const deleteProjectBtn = document.getElementById('deleteProjectBtn');
+            const uploadText = document.getElementById('uploadText');
+            
+            currentProjectDisplay.textContent = `Current: ${currentProject || 'No Project Selected'}`;
+            
+            if (currentProject) {
+                deleteProjectBtn.style.display = 'inline-block';
+                uploadText.innerHTML = `Upload spreadsheet for project: <strong>${currentProject}</strong>`;
+            } else {
+                deleteProjectBtn.style.display = 'none';
+                uploadText.textContent = 'Create or select a project to begin';
+            }
+        }
+
+        function deleteCurrentProject() {
+            if (!currentProject) return;
+            
+            if (!confirm(`Are you sure you want to delete all data for project "${currentProject}"? This cannot be undone.`)) {
+                return;
+            }
+            
+            // Remove all project-specific data
+            localStorage.removeItem(`${currentProject}_submittalPriorities`);
+            localStorage.removeItem(`${currentProject}_submittalLeadTimes`);
+            localStorage.removeItem(`${currentProject}_hiddenSubmittals`);
+            localStorage.removeItem(`${currentProject}_includeHidden`);
+            localStorage.removeItem(`${currentProject}_currentSort`);
+            localStorage.removeItem(`${currentProject}_nameSearchText`);
+            localStorage.removeItem(`${currentProject}_submittalNoSearchText`);
+            localStorage.removeItem(`${currentProject}_savedFilters`);
+            localStorage.removeItem(`${currentProject}_submittalData`);
+            
+            // Clear current project
+            currentProject = '';
+            localStorage.removeItem(`${currentProject}_selectedStatuses`);
+            
+            // Reset everything
+            submittalData = [];
+            savedPriorities = {};
+            savedLeadTimes = {};
+            hiddenSubmittals = {};
+            includeHidden = false;
+            currentSort = { column: null, direction: 'asc' };
+            nameSearchText = '';
+            submittalNoSearchText = '';
+            savedFilters = { contractor: '', status: '' };
+            selectedStatuses = new Set();
+            
+            // Update UI
+            updateProjectDisplay();
+            updateProjectSelector();
+            dashboard.style.display = 'none';
+            fileUpload.style.display = 'block';
+            
+            // Disable file upload
+            fileInput.disabled = true;
+            document.querySelector('.file-input label').style.opacity = '0.5';
+            document.querySelector('.file-input label').style.cursor = 'not-allowed';
+            
+            alert('Project deleted successfully.');
+        }
+
+        function handleDragOver(e) {
+            if (!currentProject) return;
+            e.preventDefault();
+            fileUpload.classList.add('dragover');
+        }
+
+        function handleDrop(e) {
+            if (!currentProject) return;
+            e.preventDefault();
+            fileUpload.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            if (!currentProject) return;
+            const files = e.target.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        }
+
+        function processFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    
+                    if (jsonData.length > 1) {
+                        parseSubmittalData(jsonData);
+                        showDashboard();
+                    } else {
+                        alert('The file appears to be empty or in an unexpected format.');
+                    }
+                } catch (error) {
+                    alert('Error reading file: ' + error.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+function processReimportFile(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+            
+            if (jsonData.length > 1) {
+                smartReimportSubmittalData(jsonData);
+                refreshDashboard();
+                
+                // Clear the file input
+                document.getElementById('reimportFileInput').value = '';
+                document.getElementById('reimportFileName').textContent = '';
+                document.getElementById('reimportBtn').style.display = 'none';
+                
+                alert('Submittals updated successfully! Your priorities, lead times, and hidden status have been preserved.');
+            } else {
+                alert('The file appears to be empty or in an unexpected format.');
+            }
+        } catch (error) {
+            alert('Error reading file: ' + error.message);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+        function parseSubmittalData(rawData) {
+            const headers = rawData[0];
+            const rows = rawData.slice(1);
+            
+            submittalData = rows.map(row => ({
+                submittalNo: row[0] || '',
+                name: row[1] || '',
+                status: row[2] || '',
+                specSection: row[3] || '',
+                contractor: row[4] || '',
+                contact: row[5] || '',
+                attachments: row[6] || 0,
+                statusCode: row[13] || '',
+                currentCycle: row[14] || 0,
+                priority: savedPriorities[row[0]] || '',
+                leadTime: savedLeadTimes[row[0]] || '',
+                isHidden: hiddenSubmittals[row[0]] || false
+            }));
+        }
+
+function smartReimportSubmittalData(rawData) {
+    const headers = rawData[0];
+    const rows = rawData.slice(1);
+    
+    // Create a map of existing submittals by submittal number for quick lookup
+    const existingSubmittals = {};
+    submittalData.forEach(submittal => {
+        existingSubmittals[submittal.submittalNo] = {
+            priority: submittal.priority,
+            leadTime: submittal.leadTime,
+            isHidden: submittal.isHidden
+        };
+    });
+    
+    // Track which submittals we've seen in the new data
+    const seenSubmittals = new Set();
+    
+    // Process the new data
+    const newSubmittalData = rows.map(row => {
+        const submittalNo = row[0] || '';
+        seenSubmittals.add(submittalNo);
+        
+        // Check if this submittal existed before
+        const existingData = existingSubmittals[submittalNo];
+        
+        return {
+            submittalNo: submittalNo,
+            name: row[1] || '',
+            status: row[2] || '', // This gets updated from CMiC
+            specSection: row[3] || '',
+            contractor: row[4] || '',
+            contact: row[5] || '',
+            attachments: row[6] || 0,
+            statusCode: row[13] || '',
+            currentCycle: row[14] || 0,
+            // Preserve existing manual data if it exists, otherwise use saved data
+            priority: existingData ? existingData.priority : (savedPriorities[submittalNo] || ''),
+            leadTime: existingData ? existingData.leadTime : (savedLeadTimes[submittalNo] || ''),
+            isHidden: existingData ? existingData.isHidden : (hiddenSubmittals[submittalNo] || false)
+        };
+    });
+    
+    // Handle submittals that were in the old data but not in the new data
+    const removedSubmittals = submittalData.filter(s => !seenSubmittals.has(s.submittalNo));
+    
+    if (removedSubmittals.length > 0) {
+        const removedNames = removedSubmittals.map(s => s.submittalNo).join(', ');
+        const keepRemovedSubmittals = confirm(
+            `${removedSubmittals.length} submittal(s) were not found in the new file:\n${removedNames}\n\nDo you want to keep these submittals? Click OK to keep them, Cancel to remove them.`
+        );
+        
+        if (keepRemovedSubmittals) {
+            // Add the removed submittals back to the new data
+            newSubmittalData.push(...removedSubmittals);
+        } else {
+            // Remove their saved data from localStorage
+            removedSubmittals.forEach(s => {
+                delete savedPriorities[s.submittalNo];
+                delete savedLeadTimes[s.submittalNo];
+                delete hiddenSubmittals[s.submittalNo];
+            });
+        }
+    }
+    
+    // Update the main data
+    submittalData = newSubmittalData;
+    
+    // Update saved data with any new values
+    submittalData.forEach(s => {
+        if (s.priority) savedPriorities[s.submittalNo] = s.priority;
+        if (s.leadTime) savedLeadTimes[s.submittalNo] = s.leadTime;
+        if (s.isHidden) hiddenSubmittals[s.submittalNo] = s.isHidden;
+    });
+    
+    // Save everything
+    saveProjectData();
+    localStorage.setItem(`${currentProject}_submittalData`, JSON.stringify(submittalData));
+    
+    // Clear cache to force refresh
+    filteredCache = null;
+    cacheKey = null;
+}
+
+        function showDashboard() {
+            fileUpload.style.display = 'none';
+            dashboard.style.display = 'block';
+            dashboard.innerHTML = generateDashboardHTML();
+            attachEventListeners();
+            
+            // Save the submittal data when showing dashboard
+            if (currentProject) {
+                localStorage.setItem(`${currentProject}_submittalData`, JSON.stringify(submittalData));
+            }
+        }
+
+        function generateDashboardHTML() {
+            const stats = calculateStats();
+            const contractorStats = calculateContractorStats();
+            const typeStats = calculateTypeStats();
+
+            return `
+                ${generateStatsHTML(stats)}
+                ${generateContractorSectionHTML(contractorStats)}
+                ${generateTypeSectionHTML(typeStats)}
+                ${generateTableHTML()}
+            `;
+        }
+
+        function calculateStats() {
+            const dataToCount = includeHidden ? submittalData : submittalData.filter(s => !s.isHidden);
+            const total = dataToCount.length;
+            const reviewed = dataToCount.filter(s => 
+                ['Reviewed', 'No Exceptions Taken', 'Approved', 'Approved As Noted', 'For Records Only'].includes(s.status)
+            ).length;
+            const open = dataToCount.filter(s => 
+                ['Open', 'New Item', 'Submit Specified Item'].includes(s.status)
+            ).length;
+            const needsAction = dataToCount.filter(s => 
+                ['Rejected', 'Revise and Resubmit', 'Make Corrections and Resubmit'].includes(s.status)
+            ).length;
+
+            return { total, reviewed, open, needsAction };
+        }
+
+        function calculateContractorStats() {
+            const contractors = {};
+            const dataToCount = includeHidden ? submittalData : submittalData.filter(s => !s.isHidden);
+            
+            dataToCount.forEach(s => {
+                if (!contractors[s.contractor]) {
+                    contractors[s.contractor] = { total: 0, open: 0, reviewed: 0 };
+                }
+                contractors[s.contractor].total++;
+                if (['Open', 'New Item', 'Submit Specified Item'].includes(s.status)) {
+                    contractors[s.contractor].open++;
+                }
+                if (['Reviewed', 'No Exceptions Taken', 'Approved', 'Approved As Noted', 'For Records Only'].includes(s.status)) {
+                    contractors[s.contractor].reviewed++;
+                }
+            });
+            return contractors;
+        }
+
+        function calculateTypeStats() {
+            const types = {
+                'Product Data': { total: 0, open: 0 },
+                'Shop Drawings': { total: 0, open: 0 },
+                'Samples': { total: 0, open: 0 },
+                'Other': { total: 0, open: 0 }
+            };
+
+            const dataToCount = includeHidden ? submittalData : submittalData.filter(s => !s.isHidden);
+
+            dataToCount.forEach(s => {
+                const name = s.name.toLowerCase();
+                let category = 'Other';
+                
+                if (name.includes('product data')) {
+                    category = 'Product Data';
+                } else if (name.includes('shop drawing') || name.includes('drawings')) {
+                    category = 'Shop Drawings';
+                } else if (name.includes('sample')) {
+                    category = 'Samples';
+                }
+
+                types[category].total++;
+                if (['Open', 'New Item', 'Submit Specified Item'].includes(s.status)) {
+                    types[category].open++;
+                }
+            });
+
+            return types;
+        }
+
+        function generateStatsHTML(stats) {
+            return `
+                <div class="stats-grid">
+                    <div class="stat-card primary">
+                        <div class="stat-number">${stats.total}</div>
+                        <div class="stat-label">Total Submittals</div>
+                    </div>
+                    <div class="stat-card success">
+                        <div class="stat-number">${stats.reviewed}</div>
+                        <div class="stat-label">Reviewed/Approved</div>
+                    </div>
+                    <div class="stat-card warning">
+                        <div class="stat-number">${stats.open}</div>
+                        <div class="stat-label">Open/Pending</div>
+                    </div>
+                    <div class="stat-card info">
+                        <div class="stat-number">${stats.needsAction}</div>
+                        <div class="stat-label">Needs Action</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateContractorSectionHTML(contractorStats) {
+            const contractorCards = Object.entries(contractorStats)
+                .sort(([,a], [,b]) => b.total - a.total)
+                .map(([name, stats]) => `
+                    <div class="contractor-card">
+                        <div class="contractor-name">${name}</div>
+                        <div class="contractor-stats">
+                            <span>Total: ${stats.total}</span>
+                            <span>Open: ${stats.open}</span>
+                            <span>Reviewed: ${stats.reviewed}</span>
+                        </div>
+                    </div>
+                `).join('');
+
+            return `
+                <div class="section">
+                    <h3>📋 Submittals by Contractor</h3>
+                    <div class="contractor-list">
+                        ${contractorCards}
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateTypeSectionHTML(typeStats) {
+            const typeCards = Object.entries(typeStats)
+                .map(([type, stats]) => `
+                    <div class="type-card">
+                        <h4>${type}</h4>
+                        <div class="type-stats">
+                            <span>Total: ${stats.total}</span>
+                            <span>Still Needed: ${stats.open}</span>
+                        </div>
+                    </div>
+                `).join('');
+
+            return `
+                <div class="section">
+                    <h3>📊 Submittal Types Breakdown</h3>
+                    <div class="type-breakdown">
+                        ${typeCards}
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateTableHTML() {
+            const contractors = [...new Set(submittalData.map(s => s.contractor))];
+            const statuses = [...new Set(submittalData.map(s => s.status))];
+
+            return `
+                <div class="table-container">
+                    <h3>📝 Detailed Submittal List</h3>
+                    <div class="reimport-section" style="background: #e8f4fd; border: 2px solid #667eea; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                        <h4 style="color: #2c3e50; margin-bottom: 10px;">🔄 Update from CMiC</h4>
+                        <p style="margin-bottom: 15px; color: #666;">Re-upload your updated submittal spreadsheet. Your priorities, lead times, and hidden submittals will be preserved.</p>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <input type="file" id="reimportFileInput" accept=".xlsx,.xls" style="display: none;">
+                            <label for="reimportFileInput" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-weight: 500;">Choose Updated File</label>
+                            <span id="reimportFileName" style="color: #666; font-style: italic;"></span>
+                            <button id="reimportBtn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; font-weight: 500; display: none;">Update Submittals</button>
+                        </div>
+                    </div>
+                    <div class="toggle-hidden">
+                        <input type="checkbox" id="includeHiddenToggle" ${includeHidden ? 'checked' : ''}>
+                        <label for="includeHiddenToggle">Include hidden submittals in totals and list</label>
+                    </div>
+                    <div class="filters">
+                        <div class="filter-group">
+                            <label>Contractor:</label>
+                            <select class="filter-select" id="contractorFilter">
+                                <option value="">All Contractors</option>
+                                ${contractors.map(c => `<option value="${c}" ${savedFilters.contractor === c ? 'selected' : ''}>${c}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Status:</label>
+                            <div class="multi-select-container">
+                                <div class="multi-select-button" id="statusFilterButton">
+                                    <span id="statusFilterText">All Statuses</span>
+                                    <span>▼</span>
+                                </div>
+                                <div class="multi-select-dropdown" id="statusFilterDropdown">
+                                    ${statuses.map(status => `
+                                        <div class="multi-select-option">
+                                            <input type="checkbox" id="status_${status.replace(/[^a-zA-Z0-9]/g, '_')}" value="${status}" ${selectedStatuses.has(status) ? 'checked' : ''}>
+                                            <label for="status_${status.replace(/[^a-zA-Z0-9]/g, '_')}">${status}</label>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <label>Search Names:</label>
+                            <input type="text" class="search-input" id="nameSearchInput" 
+                                   placeholder="Type to search names..." value="${nameSearchText}">
+                        </div>
+                        <div class="filter-group">
+                            <label>Search Numbers:</label>
+                            <input type="text" class="search-input" id="submittalNoSearchInput" 
+                                   placeholder="Type to search numbers..." value="${submittalNoSearchText}">
+                        </div>
+                        <div class="filter-group">
+                            <label>&nbsp;</label>
+                            <button class="clear-filters-btn" onclick="clearAllFilters()">Clear All Filters</button>
+                        </div>
+                        <div class="filter-group">
+                            <label>&nbsp;</label>
+                            <button class="export-btn" onclick="showExportOptions()">Export Submittals</button>
+                        </div>
+                    </div>
+                    <table class="submittal-table" id="submittalTable">
+                        <thead>
+                            <tr>
+                                <th>Hide</th>
+                                <th class="sortable-header" data-column="priority">
+                                    Priority
+                                    <span class="sort-arrow ${currentSort.column === 'priority' ? 'active' : ''}">${currentSort.column === 'priority' ? (currentSort.direction === 'asc' ? '▲' : '▼') : '▼'}</span>
+                                </th>
+                                <th class="sortable-header" data-column="submittalNo">
+                                    Submittal No.
+                                    <span class="sort-arrow ${currentSort.column === 'submittalNo' ? 'active' : ''}">${currentSort.column === 'submittalNo' ? (currentSort.direction === 'asc' ? '▲' : '▼') : '▼'}</span>
+                                </th>
+                                <th class="sortable-header" data-column="name">
+                                    Name
+                                    <span class="sort-arrow ${currentSort.column === 'name' ? 'active' : ''}">${currentSort.column === 'name' ? (currentSort.direction === 'asc' ? '▲' : '▼') : '▼'}</span>
+                                </th>
+                                <th class="sortable-header" data-column="status">
+                                    Status
+                                    <span class="sort-arrow ${currentSort.column === 'status' ? 'active' : ''}">${currentSort.column === 'status' ? (currentSort.direction === 'asc' ? '▲' : '▼') : '▼'}</span>
+                                </th>
+                                <th class="sortable-header" data-column="contractor">
+                                    Contractor
+                                    <span class="sort-arrow ${currentSort.column === 'contractor' ? 'active' : ''}">${currentSort.column === 'contractor' ? (currentSort.direction === 'asc' ? '▲' : '▼') : '▼'}</span>
+                                </th>
+                                <th class="sortable-header" data-column="leadTime">
+                                    Lead Time
+                                    <span class="sort-arrow ${currentSort.column === 'leadTime' ? 'active' : ''}">${currentSort.column === 'leadTime' ? (currentSort.direction === 'asc' ? '▲' : '▼') : '▼'}</span>
+                                </th>
+                                <th class="sortable-header" data-column="specSection">
+                                    Spec Section
+                                    <span class="sort-arrow ${currentSort.column === 'specSection' ? 'active' : ''}">${currentSort.column === 'specSection' ? (currentSort.direction === 'asc' ? '▲' : '▼') : '▼'}</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${generateTableRows()}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function generateTableRows(filteredData = getFilteredData()) {
+            return filteredData
+                .sort((a, b) => sortData(a, b, currentSort.column, currentSort.direction))
+                .map(submittal => `
+                    <tr class="${submittal.isHidden ? 'hidden-row' : ''}">
+                        <td>
+                            <input type="checkbox" class="hide-checkbox" 
+                                   ${submittal.isHidden ? 'checked' : ''}
+                                   data-submittal="${submittal.submittalNo}">
+                        </td>
+                        <td>
+                            <input type="number" class="priority-input" 
+                                   value="${submittal.priority}" 
+                                   data-submittal="${submittal.submittalNo}"
+                                   placeholder="--">
+                        </td>
+                        <td>${submittal.submittalNo}</td>
+                        <td>${submittal.name}</td>
+                        <td><span class="status-badge ${getStatusClass(submittal.status)}">${submittal.status}</span></td>
+                        <td>${submittal.contractor}</td>
+                        <td>
+                            <input type="text" class="lead-time-input" 
+                                   value="${submittal.leadTime}" 
+                                   data-submittal="${submittal.submittalNo}"
+                                   placeholder="--">
+                        </td>
+                        <td>${submittal.specSection}</td>
+                    </tr>
+                `).join('');
+        }
+
+        function sortData(a, b, column, direction) {
+            if (!column) {
+                // Default sort by priority (higher number = higher priority)
+                const priorityA = parseInt(a.priority) || 0; // Empty = 0 (lowest priority)
+                const priorityB = parseInt(b.priority) || 0;
+                return priorityB - priorityA; // Descending by default (higher numbers first)
+            }
+
+            let valueA, valueB;
+            
+            switch(column) {
+                case 'priority':
+                    valueA = parseInt(a.priority) || 0; // Empty = 0 (lowest priority)
+                    valueB = parseInt(b.priority) || 0;
+                    // For priority, we want higher numbers to be "higher priority"
+                    // So ascending means low to high (1,2,3...) and descending means high to low (3,2,1...)
+                    return direction === 'asc' ? valueA - valueB : valueB - valueA;
+                case 'leadTime':
+                    // Try to parse as number first, then as string
+                    valueA = parseFloat(a.leadTime) || a.leadTime || '';
+                    valueB = parseFloat(b.leadTime) || b.leadTime || '';
+                    break;
+                default:
+                    valueA = a[column] || '';
+                    valueB = b[column] || '';
+            }
+
+            if (typeof valueA === 'number' && typeof valueB === 'number') {
+                return direction === 'asc' ? valueA - valueB : valueB - valueA;
+            } else {
+                const comparison = String(valueA).localeCompare(String(valueB));
+                return direction === 'asc' ? comparison : -comparison;
+            }
+        }
+
+        function getFilteredData() {
+            // Create cache key based on current filters
+            const currentCacheKey = JSON.stringify({
+                includeHidden,
+                contractor: document.getElementById('contractorFilter')?.value || '',
+                selectedStatuses: [...selectedStatuses].sort(),
+                nameSearch: nameSearchText.trim(),
+                submittalNoSearch: submittalNoSearchText.trim()
+            });
+            
+            // Return cached result if filters haven't changed
+            if (filteredCache && cacheKey === currentCacheKey) {
+                return filteredCache;
+            }
+            
+            let filtered = [...submittalData];
+            
+            // Filter out hidden submittals if not including them
+            if (!includeHidden) {
+                filtered = filtered.filter(s => !s.isHidden);
+            }
+            
+            const contractorFilter = document.getElementById('contractorFilter')?.value;
+            const statusFilter = document.getElementById('statusFilter')?.value;
+            
+            if (contractorFilter) {
+                filtered = filtered.filter(s => s.contractor === contractorFilter);
+            }
+            
+            if (selectedStatuses.size > 0) {
+                filtered = filtered.filter(s => selectedStatuses.has(s.status));
+            }
+
+            // Filter by name search text
+            if (nameSearchText.trim()) {
+                const searchLower = nameSearchText.toLowerCase();
+                filtered = filtered.filter(s => 
+                    s.name.toLowerCase().includes(searchLower)
+                );
+            }
+
+            // Filter by submittal number search text with wildcard support
+            if (submittalNoSearchText.trim()) {
+                const searchText = submittalNoSearchText.trim().toLowerCase();
+    
+                // Check if the search contains asterisks (wildcards)
+                if (searchText.includes('*')) {
+                    // Convert wildcard pattern to regex
+                    // Escape special regex characters except asterisks
+                    const escapedSearch = searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '.*');
+                    const searchRegex = new RegExp('^' + escapedSearch + '$', 'i');
+        
+                    filtered = filtered.filter(s => 
+                        searchRegex.test(s.submittalNo)
+                    );
+                } else {
+                    // Regular contains search (no wildcards)
+                    filtered = filtered.filter(s => 
+                        s.submittalNo.toLowerCase().includes(searchText)
+                    );
+                }
+            }
+            
+            // Cache the result
+            filteredCache = filtered;
+            cacheKey = currentCacheKey;
+            
+            return filtered;
+        }
+
+        function getStatusClass(status) {
+            const statusLower = status.toLowerCase();
+            if (statusLower.includes('reviewed') || statusLower.includes('approved') || statusLower.includes('no exceptions')) {
+                return 'status-reviewed';
+            } else if (statusLower.includes('open') || statusLower.includes('new')) {
+                return 'status-open';
+            } else if (statusLower.includes('rejected') || statusLower.includes('revise')) {
+                return 'status-rejected';
+            }
+            return 'status-approved';
+        }
+
+function updateStatusFilterText() {
+    const statusFilterText = document.getElementById('statusFilterText');
+    if (selectedStatuses.size === 0) {
+        statusFilterText.textContent = 'All Statuses';
+    } else if (selectedStatuses.size === 1) {
+        statusFilterText.textContent = Array.from(selectedStatuses)[0];
+    } else {
+        statusFilterText.textContent = `${selectedStatuses.size} statuses selected`;
+    }
+}
+
+        function attachEventListeners() {
+            // Name search input handling with optimized debouncing
+            const nameSearchInput = document.getElementById('nameSearchInput');
+            if (nameSearchInput) {
+                // Remove any existing listeners to prevent duplicates
+                nameSearchInput.removeEventListener('input', nameSearchInput._searchHandler);
+                
+                nameSearchInput._searchHandler = function() {
+                    nameSearchText = this.value;
+                    saveProjectData();
+                    
+                    // Clear cache when search changes
+                    filteredCache = null;
+                    cacheKey = null;
+                    
+                    updateTable();
+                };
+                
+                nameSearchInput.addEventListener('input', nameSearchInput._searchHandler);
+            }
+
+
+            // Submittal number search input handling (add this entire block)
+            const submittalNoSearchInput = document.getElementById('submittalNoSearchInput');
+            if (submittalNoSearchInput) {
+                // Remove any existing listeners to prevent duplicates
+                submittalNoSearchInput.removeEventListener('input', submittalNoSearchInput._searchHandler);
+    
+                submittalNoSearchInput._searchHandler = function() {
+                    submittalNoSearchText = this.value;
+                    saveProjectData();
+        
+                    // Clear cache when search changes
+                    filteredCache = null;
+                    cacheKey = null;
+        
+                    updateTable();
+                };
+    
+                submittalNoSearchInput.addEventListener('input', submittalNoSearchInput._searchHandler);
+            }
+
+            // Sortable header handling
+            document.querySelectorAll('.sortable-header').forEach(header => {
+                header.addEventListener('click', function() {
+                    const column = this.dataset.column;
+                    
+                    // Reset all arrows first
+                    document.querySelectorAll('.sort-arrow').forEach(arrow => {
+                        arrow.classList.remove('active');
+                        arrow.textContent = '▼';
+                    });
+                    
+                    // Update sort direction
+                    if (currentSort.column === column) {
+                        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        currentSort.column = column;
+                        currentSort.direction = 'asc';
+                    }
+                    
+                    // Save sort state
+                    saveProjectData();
+                    
+                    // Update visual indicator for active column
+                    const arrow = this.querySelector('.sort-arrow');
+                    arrow.classList.add('active');
+                    arrow.textContent = currentSort.direction === 'asc' ? '▲' : '▼';
+                    
+                    updateTable();
+                });
+            });
+
+            // Hide checkbox handling
+            document.querySelectorAll('.hide-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const submittalNo = this.dataset.submittal;
+                    const isHidden = this.checked;
+                    hiddenSubmittals[submittalNo] = isHidden;
+                    saveProjectData();
+                    
+                    // Update the data
+                    const submittal = submittalData.find(s => s.submittalNo === submittalNo);
+                    if (submittal) {
+                        submittal.isHidden = isHidden;
+                    }
+                    
+                    // Update the row appearance
+                    const row = this.closest('tr');
+                    if (isHidden) {
+                        row.classList.add('hidden-row');
+                    } else {
+                        row.classList.remove('hidden-row');
+                    }
+                    
+                    // Refresh dashboard and table
+                    refreshDashboard();
+                });
+            });
+
+            // Include hidden toggle handling
+            const includeHiddenToggle = document.getElementById('includeHiddenToggle');
+            if (includeHiddenToggle) {
+                includeHiddenToggle.addEventListener('change', function() {
+                    includeHidden = this.checked;
+                    saveProjectData();
+                    refreshDashboard();
+                });
+            }
+
+            // Priority input handling
+            document.querySelectorAll('.priority-input').forEach(input => {
+                input.addEventListener('change', function() {
+                    const submittalNo = this.dataset.submittal;
+                    const priority = this.value;
+                    savedPriorities[submittalNo] = priority;
+                    saveProjectData();
+                    
+                    // Update the data and re-render table
+                    const submittal = submittalData.find(s => s.submittalNo === submittalNo);
+                    if (submittal) {
+                        submittal.priority = priority;
+                    }
+                    updateTable();
+                });
+            });
+
+            // Lead time input handling
+            document.querySelectorAll('.lead-time-input').forEach(input => {
+                input.addEventListener('change', function() {
+                    const submittalNo = this.dataset.submittal;
+                    const leadTime = this.value;
+                    savedLeadTimes[submittalNo] = leadTime;
+                    saveProjectData();
+                    
+                    // Update the data
+                    const submittal = submittalData.find(s => s.submittalNo === submittalNo);
+                    if (submittal) {
+                        submittal.leadTime = leadTime;
+                    }
+                });
+            });
+
+            // Filter handling with performance optimization
+            const contractorFilter = document.getElementById('contractorFilter');
+            const statusFilter = document.getElementById('statusFilter');
+            
+            if (contractorFilter) {
+                // Remove existing listener to prevent duplicates
+                contractorFilter.removeEventListener('change', contractorFilter._changeHandler);
+                
+                contractorFilter._changeHandler = function() {
+                    savedFilters.contractor = this.value;
+                    saveProjectData();
+                    
+                    // Clear cache when filter changes
+                    filteredCache = null;
+                    cacheKey = null;
+                    
+                    applyFilters();
+                };
+                
+                contractorFilter.addEventListener('change', contractorFilter._changeHandler);
+            }
+            
+// Multi-select status filter handling
+const statusFilterButton = document.getElementById('statusFilterButton');
+const statusFilterDropdown = document.getElementById('statusFilterDropdown');
+
+if (statusFilterButton && statusFilterDropdown) {
+    // Remove any existing event listeners to prevent duplicates
+    statusFilterButton.removeEventListener('click', statusFilterButton._clickHandler);
+    
+    statusFilterButton._clickHandler = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const isCurrentlyVisible = statusFilterDropdown.style.display === 'block';
+        
+        // Close all other dropdowns first
+        document.querySelectorAll('.multi-select-dropdown').forEach(dropdown => {
+            if (dropdown !== statusFilterDropdown) {
+                dropdown.style.display = 'none';
+            }
+        });
+        
+        // Toggle this dropdown
+        statusFilterDropdown.style.display = isCurrentlyVisible ? 'none' : 'block';
+    };
+    
+    statusFilterButton.addEventListener('click', statusFilterButton._clickHandler);
+
+    statusFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        // Remove existing listeners to prevent duplicates
+        checkbox.removeEventListener('change', checkbox._changeHandler);
+        
+        checkbox._changeHandler = function() {
+            if (this.checked) {
+                selectedStatuses.add(this.value);
+            } else {
+                selectedStatuses.delete(this.value);
+            }
+            updateStatusFilterText();
+            saveProjectData();
+            
+            filteredCache = null;
+            cacheKey = null;
+            
+            updateTable();
+        };
+        
+        checkbox.addEventListener('change', checkbox._changeHandler);
+    });
+
+    // Prevent dropdown from closing when clicking inside it
+    statusFilterDropdown.removeEventListener('click', statusFilterDropdown._clickHandler);
+    statusFilterDropdown._clickHandler = function(e) {
+        e.stopPropagation();
+    };
+    statusFilterDropdown.addEventListener('click', statusFilterDropdown._clickHandler);
+
+    updateStatusFilterText();
+}
+
+// Re-import file handling
+const reimportFileInput = document.getElementById('reimportFileInput');
+const reimportBtn = document.getElementById('reimportBtn');
+const reimportFileName = document.getElementById('reimportFileName');
+
+if (reimportFileInput) {
+    reimportFileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            const fileName = this.files[0].name;
+            reimportFileName.textContent = fileName;
+            reimportBtn.style.display = 'inline-block';
+            
+            reimportBtn.onclick = function() {
+                if (confirm('This will update your submittals with data from the new file while preserving your priorities, lead times, and hidden status. Continue?')) {
+                    processReimportFile(reimportFileInput.files[0]);
+                }
+            };
+        } else {
+            reimportFileName.textContent = '';
+            reimportBtn.style.display = 'none';
+        }
+    });
+}
+
+        }
+
+        function updateTable() {
+            // Prevent multiple simultaneous updates
+            if (isUpdating) return;
+            
+            // Clear any pending updates
+            if (updateTimeout) {
+                clearTimeout(updateTimeout);
+            }
+            
+            // Debounce rapid updates (especially for search input)
+            updateTimeout = setTimeout(() => {
+                isUpdating = true;
+                
+                try {
+                    const tbody = document.querySelector('#submittalTable tbody');
+                    if (!tbody) return;
+                    
+                    const filteredData = getFilteredData();
+                    
+                    // Simple innerHTML replacement - faster and preserves structure
+                    tbody.innerHTML = generateTableRows(filteredData);
+                    
+                    attachEventListeners();
+                } catch (error) {
+                    console.error('Error updating table:', error);
+                } finally {
+                    isUpdating = false;
+                }
+            }, 100); // Reduced debounce to 100ms for better responsiveness
+        }
+
+        function applyFilters() {
+            updateTable();
+        }
+
+function refreshDashboard() {
+    // Prevent multiple simultaneous refreshes
+    if (isUpdating) return;
+    
+    // Clear cache when refreshing dashboard
+    filteredCache = null;
+    cacheKey = null;
+    
+    isUpdating = true;
+    
+    try {
+        // Completely regenerate the dashboard HTML
+        dashboard.innerHTML = generateDashboardHTML();
+        
+        // Reattach all event listeners
+        attachEventListeners();
+        
+        // Force table to update with current project data
+        setTimeout(() => {
+            updateTable();
+        }, 10);
+        
+    } catch (error) {
+        console.error('Error refreshing dashboard:', error);
+    } finally {
+        isUpdating = false;
+    }
+}
+
+        // Export Modal HTML
+        function createExportModal() {
+            const contractors = [...new Set(submittalData.map(s => s.contractor))];
+            const statuses = [...new Set(submittalData.map(s => s.status))];
+            
+            return `
+                <div class="export-options" id="exportModal">
+                    <div class="export-modal">
+                        <h3>📊 Export Submittals</h3>
+                        
+                        <div class="export-option" data-option="current">
+                            <input type="radio" name="exportType" value="current" id="export-current">
+                            <label for="export-current"><strong>Export Current View</strong></label>
+                            <div class="export-option-details">
+                                <p>Export exactly what you see on screen (with current filters, sorting, and search)</p>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="current-include-hidden">
+                                    <label for="current-include-hidden">Include hidden submittals</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="export-option" data-option="status">
+                            <input type="radio" name="exportType" value="status" id="export-status">
+                            <label for="export-status"><strong>Export by Status</strong></label>
+                            <div class="export-option-details">
+                                <p>Select which statuses to include:</p>
+                                <div class="checkbox-group">
+                                    ${statuses.map(status => `
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="status-${status.replace(/[^a-zA-Z0-9]/g, '_')}" value="${status}">
+                                            <label for="status-${status.replace(/[^a-zA-Z0-9]/g, '_')}">${status}</label>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="status-include-hidden">
+                                    <label for="status-include-hidden">Include hidden submittals</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="export-option" data-option="contractor">
+                            <input type="radio" name="exportType" value="contractor" id="export-contractor">
+                            <label for="export-contractor"><strong>Export by Contractor</strong></label>
+                            <div class="export-option-details">
+                                <p>Select contractors to include:</p>
+                                <div class="checkbox-group">
+                                    ${contractors.map(contractor => `
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="contractor-${contractor.replace(/[^a-zA-Z0-9]/g, '_')}" value="${contractor}">
+                                            <label for="contractor-${contractor.replace(/[^a-zA-Z0-9]/g, '_')}">${contractor}</label>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <p style="margin-top: 15px; font-weight: bold;">Filter by Status:</p>
+                                <div class="checkbox-group">
+                                    ${statuses.map(status => `
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="contractor-status-${status.replace(/[^a-zA-Z0-9]/g, '_')}" value="${status}">
+                                            <label for="contractor-status-${status.replace(/[^a-zA-Z0-9]/g, '_')}">${status}</label>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <p style="margin-top: 10px; font-size: 0.9rem; color: #666;">Leave status filters empty to include all statuses</p>
+                                <div class="checkbox-item" style="margin-top: 15px;">
+                                    <input type="checkbox" id="contractor-include-hidden">
+                                    <label for="contractor-include-hidden">Include hidden submittals</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="contractor-separate-files">
+                                    <label for="contractor-separate-files">Create separate file for each contractor</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-buttons">
+                            <button class="modal-btn secondary" onclick="closeExportModal()">Cancel</button>
+                            <button class="modal-btn primary" onclick="performExport()">Export</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showExportOptions() {
+            // Remove existing modal if present
+            const existingModal = document.getElementById('exportModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Add new modal to body
+            document.body.insertAdjacentHTML('beforeend', createExportModal());
+            
+            // Show modal
+            const modal = document.getElementById('exportModal');
+            modal.style.display = 'flex';
+            
+            // Add event listeners for radio buttons
+            document.querySelectorAll('input[name="exportType"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    // Remove selected class from all options
+                    document.querySelectorAll('.export-option').forEach(option => {
+                        option.classList.remove('selected');
+                    });
+                    
+                    // Add selected class to chosen option
+                    const selectedOption = document.querySelector(`[data-option="${this.value}"]`);
+                    if (selectedOption) {
+                        selectedOption.classList.add('selected');
+                    }
+                });
+            });
+            
+            // Select first option by default
+            document.getElementById('export-current').checked = true;
+            document.querySelector('[data-option="current"]').classList.add('selected');
+        }
+
+        function closeExportModal() {
+            const modal = document.getElementById('exportModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        function performExport() {
+            const selectedType = document.querySelector('input[name="exportType"]:checked').value;
+            
+            switch(selectedType) {
+                case 'current':
+                    exportCurrentView();
+                    break;
+                case 'status':
+                    exportByStatus();
+                    break;
+                case 'contractor':
+                    exportByContractor();
+                    break;
+            }
+            
+            closeExportModal();
+        }
+
+        function exportCurrentView() {
+            const includeHidden = document.getElementById('current-include-hidden').checked;
+            const tempIncludeHidden = window.includeHidden;
+            window.includeHidden = includeHidden;
+            
+            const dataToExport = getFilteredData();
+            exportToExcel(dataToExport, 'Current_View_Submittals');
+            
+            window.includeHidden = tempIncludeHidden;
+        }
+
+        function exportByStatus() {
+            const includeHidden = document.getElementById('status-include-hidden').checked;
+            const selectedStatuses = [];
+            
+            document.querySelectorAll('[id^="status-"]:checked').forEach(checkbox => {
+                if (checkbox.id !== 'status-include-hidden') {
+                    selectedStatuses.push(checkbox.value);
+                }
+            });
+            
+            if (selectedStatuses.length === 0) {
+                alert('Please select at least one status to export.');
+                return;
+            }
+            
+            const dataToExport = submittalData.filter(s => {
+                const statusMatch = selectedStatuses.includes(s.status);
+                const hiddenMatch = includeHidden || !s.isHidden;
+                return statusMatch && hiddenMatch;
+            });
+            
+            const statusNames = selectedStatuses.join('_').replace(/[^a-zA-Z0-9_]/g, '_');
+            exportToExcel(dataToExport, `Submittals_by_Status_${statusNames}`);
+        }
+
+        function exportByContractor() {
+            const includeHidden = document.getElementById('contractor-include-hidden').checked;
+            const separateFiles = document.getElementById('contractor-separate-files').checked;
+            const selectedContractors = [];
+            const selectedStatuses = [];
+            
+            // Get selected contractors
+            document.querySelectorAll('[id^="contractor-"]:checked').forEach(checkbox => {
+                if (checkbox.id !== 'contractor-include-hidden' && 
+                    checkbox.id !== 'contractor-separate-files' && 
+                    !checkbox.id.includes('contractor-status-')) {
+                    selectedContractors.push(checkbox.value);
+                }
+            });
+            
+            // Get selected statuses for contractor export
+            document.querySelectorAll('[id^="contractor-status-"]:checked').forEach(checkbox => {
+                selectedStatuses.push(checkbox.value);
+            });
+            
+            if (selectedContractors.length === 0) {
+                alert('Please select at least one contractor to export.');
+                return;
+            }
+            
+            if (separateFiles) {
+                // Create separate file for each contractor
+                selectedContractors.forEach(contractor => {
+                    const contractorData = submittalData.filter(s => {
+                        const contractorMatch = s.contractor === contractor;
+                        const hiddenMatch = includeHidden || !s.isHidden;
+                        
+                        // If statuses are selected, filter by them; otherwise include all
+                        const statusMatch = selectedStatuses.length === 0 || selectedStatuses.includes(s.status);
+                        
+                        return contractorMatch && hiddenMatch && statusMatch;
+                    });
+                    
+                    let fileName = `${contractor.replace(/[^a-zA-Z0-9]/g, '_')}_Submittals`;
+                    
+                    // Add status info to filename if statuses were filtered
+                    if (selectedStatuses.length > 0) {
+                        const statusSuffix = selectedStatuses.length === 1 
+                            ? `_${selectedStatuses[0].replace(/[^a-zA-Z0-9]/g, '_')}`
+                            : `_${selectedStatuses.length}_Statuses`;
+                        fileName += statusSuffix;
+                    }
+                    
+                    exportToExcel(contractorData, fileName);
+                });
+            } else {
+                // Single file with all selected contractors
+                const dataToExport = submittalData.filter(s => {
+                    const contractorMatch = selectedContractors.includes(s.contractor);
+                    const hiddenMatch = includeHidden || !s.isHidden;
+                    
+                    // If statuses are selected, filter by them; otherwise include all
+                    const statusMatch = selectedStatuses.length === 0 || selectedStatuses.includes(s.status);
+                    
+                    return contractorMatch && hiddenMatch && statusMatch;
+                });
+                
+                let fileName = 'Selected_Contractors_Submittals';
+                
+                // Add status info to filename if statuses were filtered
+                if (selectedStatuses.length > 0) {
+                    const statusSuffix = selectedStatuses.length === 1 
+                        ? `_${selectedStatuses[0].replace(/[^a-zA-Z0-9]/g, '_')}`
+                        : `_${selectedStatuses.length}_Statuses`;
+                    fileName += statusSuffix;
+                }
+                
+                exportToExcel(dataToExport, fileName);
+            }
+        }
+
+function clearAllFilters() {
+            // Clear status selections
+            selectedStatuses.clear();
+            
+            // Clear contractor filter
+            const contractorFilter = document.getElementById('contractorFilter');
+            if (contractorFilter) {
+                contractorFilter.value = '';
+                savedFilters.contractor = '';
+            }
+            
+            // Clear search inputs
+            nameSearchText = '';
+            submittalNoSearchText = '';
+            
+            const nameSearchInput = document.getElementById('nameSearchInput');
+            const submittalNoSearchInput = document.getElementById('submittalNoSearchInput');
+            
+            if (nameSearchInput) nameSearchInput.value = '';
+            if (submittalNoSearchInput) submittalNoSearchInput.value = '';
+            
+            // Save the cleared state
+            saveProjectData();
+            
+            // Clear cache and refresh
+            filteredCache = null;
+            cacheKey = null;
+            
+            // Update status filter display
+            updateStatusFilterText();
+            
+            // Refresh the table
+            updateTable();
+            
+            alert('All filters cleared!');
+        }
+
+        function exportToExcel(data, filename) {
+            if (data.length === 0) {
+                alert('No data to export with the selected criteria.');
+                return;
+            }
+            
+            // Prepare data for Excel export
+            const headers = ['Priority', 'Submittal No.', 'Name', 'Status', 'Contractor', 'Lead Time', 'Spec Section'];
+            const excelData = [
+                headers,
+                ...data.map(s => [
+                    s.priority || '',
+                    s.submittalNo || '',
+                    s.name || '',
+                    s.status || '',
+                    s.contractor || '',
+                    s.leadTime || '',
+                    s.specSection || ''
+                ])
+            ];
+            
+            // Create workbook and worksheet
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(excelData);
+            
+            // Set column widths
+            ws['!cols'] = [
+                { width: 10 }, // Priority
+                { width: 20 }, // Submittal No.
+                { width: 40 }, // Name
+                { width: 20 }, // Status
+                { width: 30 }, // Contractor
+                { width: 15 }, // Lead Time
+                { width: 25 }  // Spec Section
+            ];
+            
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, 'Submittals');
+            
+            // Generate and download file
+            const date = new Date().toISOString().split('T')[0];
+            const fullFilename = `${filename}_${date}.xlsx`;
+            XLSX.writeFile(wb, fullFilename);
+        }
+
+// Global click handler to close dropdowns (add this only once, outside of attachEventListeners)
+document.addEventListener('click', function(e) {
+    // Close all multi-select dropdowns when clicking outside
+    document.querySelectorAll('.multi-select-dropdown').forEach(dropdown => {
+        if (!e.target.closest('.multi-select-container')) {
+            dropdown.style.display = 'none';
+        }
+    });
+});
+
+        // Close export modal when clicking outside
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('exportModal');
+            if (modal && e.target === modal) {
+                closeExportModal();
+            }
+        });
+
+        // Initialize drag and drop prevention for the page
+        document.addEventListener('dragover', function(e) {
+            e.preventDefault();
+        });
+
+        document.addEventListener('drop', function(e) {
+            e.preventDefault();
+        });
+    </script>
+</body>
+</html>
