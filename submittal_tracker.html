@@ -2189,6 +2189,11 @@ function clearAllFilters() {
                 contractorFilter.value = '';
                 savedFilters.contractor = '';
             }
+
+            // Clear status checkboxes
+            document.querySelectorAll('#statusFilterDropdown input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = false;
+            });
             
             // Clear search inputs
             nameSearchText = '';
